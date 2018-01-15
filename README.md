@@ -47,7 +47,7 @@ A sample input file may be:
 Which will result in something like that:
 
     ...
-    theme.color.primary = "#f0f0f0"
+    theme.color.primary = "#abcdef"
     theme.color.warning = "#aaabbb"
     ...
 
