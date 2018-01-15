@@ -35,7 +35,7 @@ Here is a sample configuration:
 
 (Values starting with `@` will be dereferenced to the appropriate key when possible.)
 
-This sample file tells us that we want to bind `some_app/some_config.cfy` to `some_app/some_config.conf` and replace color.1 with #abcabc for instance.
+This sample file tells us that we want to bind `some_app/some_config.cfy` to `some_app/some_config.conf` and replace `color.1` with `#abcabc` for instance.
 
 A sample input file may be:
 
@@ -56,6 +56,9 @@ As you can see, keys are surrounded with `${{` and `}}` to aleviate conflicts. I
 ## Watch Modes
 
 If you simply run `confy -c some_config.yaml`, `confy` will stop after its job is done (output files generated).
+
 You may, however, wish to regenerate an output file when its input file is modified without running the command again. You can use the --watch-bindings flag (-B) for this.
+
 You may as well wish to regenerate all output files when the config file is modified. Use --watch-config (-C) for this.
+
 Those flags will run the program as a daemon, watching for inotify events and reacting accordingly.
