@@ -4,7 +4,7 @@ Manage values that appear in multiple configuration files in a centralized way.
 
 ## What
 
-`Confy` is a small rust program that solves a recurring problem I had: changing the theme of multiple eterogeneous apps from a unique file.
+`Confy` is a small rust program that solves a recurring problem I had: changing the theme of multiple heterogeneous apps from a unique file.
 
 `Confy` may be used for much more than that tought, it's up to you to be creative.
 
