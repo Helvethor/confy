@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::collections::HashMap;
 
-use ::PathBinding;
+use config::PathBinding;
 use variables::Variables;
 
 #[derive(Debug)]
@@ -36,7 +36,7 @@ impl Generator {
             Err(e) => {
                 return Err(format!(
                     "Couldn't open {}: {}",
-                    binding.from.display(),
+                    binding.to.display(),
                     e.description()))
             }
         };

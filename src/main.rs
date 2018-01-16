@@ -13,7 +13,7 @@ extern crate log;
 extern crate env_logger;
 
 use std::process::exit;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::env;
 use std::io::Write;
 use log::Level;
@@ -22,14 +22,7 @@ use clap::{App, Arg};
 
 use watcher::{Watcher, Mode};
 use generator::Generator;
-use config::Config;
-
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PathBinding {
-    pub from: PathBuf,
-    pub to: PathBuf,
-}
+use config::{Config, PathBinding};
 
 
 fn main() {
