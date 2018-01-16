@@ -80,7 +80,7 @@ impl DisjointSet {
             size
         }
         else {
-            panic!("Root not found for {}\n", n)
+            panic!("Root not found for {}", n)
         }
     }
 
@@ -111,11 +111,11 @@ impl DisjointSet {
                         self.elements[b].set(Node::Child(a));
                     },
                     Node::Child(r) =>
-                        panic!("Unexepected child element: Child({})\n", r)
+                        panic!("Unexepected child element: Child({})", r)
                 }
             },
             &mut Node::Child(r) => 
-                panic!("Unexepected child element: Child({})\n", r)
+                panic!("Unexepected child element: Child({})", r)
         };
     }
 }

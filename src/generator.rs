@@ -8,13 +8,13 @@ use ::PathBinding;
 use variables::Variables;
 
 #[derive(Debug)]
-pub struct Confy {
+pub struct Generator {
     variables: Variables,
 }
 
-impl Confy {
-    pub fn new(variables: &HashMap<String, String>) -> Confy {
-        Confy {
+impl Generator {
+    pub fn new(variables: &HashMap<String, String>) -> Generator {
+        Generator {
             variables: Variables::new(variables)
         }
     }

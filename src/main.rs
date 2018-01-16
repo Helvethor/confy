@@ -1,4 +1,4 @@
-mod confy;
+mod generator;
 mod watcher;
 mod config;
 mod variables;
@@ -8,13 +8,20 @@ extern crate serde_derive;
 extern crate serde_yaml;
 extern crate inotify;
 extern crate clap;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
 
 use std::process::exit;
 use std::path::{Path, PathBuf};
+use std::env;
+use std::io::Write;
+use log::Level;
+use env_logger::Color;
 use clap::{App, Arg};
 
 use watcher::{Watcher, Mode};
-use confy::Confy;
+use generator::Generator;
 use config::Config;
 
 
@@ -26,7 +33,9 @@ pub struct PathBinding {
 
 
 fn main() {
-    let matches = App::new("Confy")
+    log_init();
+
+    let matches = App::new("Generator")
         .version("0.1")
         .author("Vincent Pasquier")
         .about("Continuously make substitue key-value pairs accross multiple configuration files")
@@ -59,18 +68,18 @@ fn main() {
         let config = match Config::new(config_file) {
             Ok(c) => c,
             Err(e) => {
-                eprint!("{}\n", e);
+                error!("{}", e);
                 exit(1);
             }
         };
 
-        let confy = Confy::new(&config.variables);
+        let generator = Generator::new(&config.variables);
         for binding in config.bindings.iter() {
-            match confy.process(binding) {
-                Ok(n) => print!(
-                    "{}: replaced {} key(s)\n",
+            match generator.process(binding) {
+                Ok(n) => info!(
+                    "{}: replaced {} key(s)",
                     binding.from.display(), n),
-                Err(e) => eprint!("{}\n", e)
+                Err(e) => error!("{}", e)
             };
         }
     }
@@ -78,7 +87,7 @@ fn main() {
         let mut watcher = match Watcher::new(config_file, mode) {
             Ok(w) => w,
             Err(e) => {
-                eprint!("{}\n", e);
+                error!("{}", e);
                 exit(1);
             }
         };
@@ -86,3 +95,31 @@ fn main() {
     }
 }
 
+fn log_init() {
+    let mut builder = env_logger::Builder::new();
+     
+    builder.format(|buf, record| {
+        let level = record.level();
+        let mut level_style = buf.style();
+        match level {
+            Level::Trace => level_style.set_color(Color::White),
+            Level::Debug => level_style.set_color(Color::Blue),
+            Level::Info => level_style.set_color(Color::Green),
+            Level::Warn => level_style.set_color(Color::Yellow),
+            Level::Error => level_style.set_color(Color::Red).set_bold(true),
+        };
+        if let Some(module_path) = record.module_path() {
+            writeln!(buf, "[{:>5}] {}: {}", level_style.value(level),
+                module_path, record.args())
+        }
+        else {
+            writeln!(buf, "[{:>5}] {}", level_style.value(level), record.args())
+        }
+    });
+
+    if let Ok(rust_log) = env::var("RUST_LOG") {
+       builder.parse(&rust_log);
+    }
+
+    builder.init();
+}
