@@ -31,7 +31,7 @@ fn main() {
     let matches = App::new("Generator")
         .version("0.1")
         .author("Vincent Pasquier")
-        .about("Continuously make substitue key-value pairs accross multiple configuration files")
+        .about("Continuously substitute key-value pairs accross multiple configuration files")
         .arg(Arg::with_name("config_file")
             .help("Configuration file (.yaml)")
             .short("c")
@@ -47,8 +47,6 @@ fn main() {
             .help("Update internal configuration when the config file is modified")
             .short("C")
             .long("watch-config"))
-        .arg(Arg::with_name("verbose")
-            .help("Output runtime informations"))
         .get_matches();
 
     let config_file = Path::new(matches.value_of("config_file").unwrap());
