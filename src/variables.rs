@@ -56,6 +56,9 @@ impl Variables {
             map.insert(key.clone(), value.clone());
         }
 
+        debug!("original variables: {:?}", original);
+        debug!("dereferenced variables: {:?}", map);
+
         Variables { map }
     }
 }
