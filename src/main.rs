@@ -28,7 +28,7 @@ use config::{Config, PathBinding};
 fn main() {
     log_init();
 
-    let matches = App::new("Generator")
+    let matches = App::new("Confy")
         .version("0.1")
         .author("Vincent Pasquier")
         .about("Continuously substitute key-value pairs accross multiple configuration files")
