@@ -31,11 +31,11 @@ impl Variables {
         let mut map = HashMap::with_capacity(original.len());
 
         let mut recto = HashMap::with_capacity(original.len());
-        let mut verso = HashMap::with_capacity(original.len());
+        let mut verso = Vec::with_capacity(original.len());
 
         for (i, key) in original.keys().enumerate() {
             recto.insert(&key[..], i);
-            verso.insert(i, &key[..]);
+            verso[0] = &key[..];
         }
 
         let mut set = DisjointSet::new(original.len());
@@ -51,7 +51,7 @@ impl Variables {
         for key in original.keys() {
             let i = recto.get(&key[..]).unwrap();
             let j = set.root(*i);
-            let deref_key = verso.get(&j).unwrap();
+            let deref_key = verso[j];
             let value = original.get(&deref_key[..]).unwrap();
             map.insert(key.clone(), value.clone());
         }
