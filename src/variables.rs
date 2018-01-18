@@ -35,7 +35,7 @@ impl Variables {
 
         for (i, key) in original.keys().enumerate() {
             recto.insert(&key[..], i);
-            verso[0] = &key[..];
+            verso.push(&key[..]);
         }
 
         let mut set = DisjointSet::new(original.len());
