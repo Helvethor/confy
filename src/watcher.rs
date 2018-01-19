@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::error::Error;
@@ -33,7 +33,7 @@ impl<'a> Watcher<'a> {
         };
 
         let config_wd = match config_file.parent() {
-            Some(p) => match inotify.add_watch(p, WatchMask::CLOSE_WRITE) {
+            Some(p) => match inotify.add_watch(p, WatchMask::CLOSE_WRITE ) {
                 Ok(wd) => wd,
                 Err(e) => return Err(format!(
                     "Could add config watch: {}", e.description()))
@@ -116,6 +116,7 @@ impl<'a> Watcher<'a> {
             };
 
             for event in events {
+                debug!("Event: {:?}", event);
                 if self.handle_event(event) {
                     break;
                 }
@@ -176,9 +177,14 @@ impl<'a> Watcher<'a> {
 
     fn is_config_event(&self, event: &Event) -> bool {
         if let Some(name) = event.name {
-            if event.wd == self.config_wd
-                && name == self.config_file.file_name().unwrap() {
-                return true;
+            if event.wd == self.config_wd {
+                let mut current = PathBuf::from(self.config_file);
+                while let Ok(next) = current.read_link() {
+                    current = next;
+                }
+                if name == current.file_name().unwrap() {
+                    return true;
+                }
             }
         }
         false
