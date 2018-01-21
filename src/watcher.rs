@@ -6,44 +6,52 @@ use std::error::Error;
 use inotify::{Event, WatchMask, WatchDescriptor, Inotify};
 use ::PathBinding;
 use generator::Generator;
-use config::Config;
+use config::{Config, ConfigFiles};
 
 
 pub struct Watcher<'a> {
-    config_file: &'a Path,
-    config_wd: WatchDescriptor,
+    config_files: ConfigFiles<'a>,
+    config_wd: ConfigWatchDescriptors,
     inotify: Inotify,
     generator: Option<Generator>,
     watches: HashMap<WatchDescriptor, HashMap<OsString, PathBinding>>,
     mode: Mode
 }
 
+struct ConfigWatchDescriptors {
+    bindings: WatchDescriptor,
+    variables: WatchDescriptor
+}
 
 pub struct Mode {
+    pub files: bool,
     pub bindings: bool,
-    pub config: bool
+    pub variables: bool
 }
 
 
 impl<'a> Watcher<'a> {
-    pub fn new(config_file: &Path, mode: Mode) -> Result<Watcher, String> {
+    pub fn new(config_files: ConfigFiles<'a>, mode: Mode) -> Result<Watcher, String> {
         let mut inotify = match Inotify::init() {
             Ok(i) => i,
             Err(e) => return Err(format!("Couldn't open inotify: {}", e))
         };
 
-        let config_wd = match config_file.parent() {
-            Some(p) => match inotify.add_watch(p, WatchMask::CLOSE_WRITE ) {
-                Ok(wd) => wd,
-                Err(e) => return Err(format!(
-                    "Could add config watch: {}", e.description()))
-            },
-            None => return Err(format!(
-                "Couldn't get config_file's directory: {}", config_file.display()))
+        let bindings_wd = match Watcher::get_file_wd(&mut inotify, config_files.bindings) {
+            Ok(wd) => wd,
+            Err(e) => return Err(e)
+        };
+        let variables_wd = match Watcher::get_file_wd(&mut inotify, config_files.variables) {
+            Ok(wd) => wd,
+            Err(e) => return Err(e)
+        };
+        let config_wd = ConfigWatchDescriptors {
+            bindings: bindings_wd,
+            variables: variables_wd
         };
 
         let mut watcher = Watcher {
-            config_file,
+            config_files,
             config_wd,
             inotify,
             generator: None,
@@ -57,9 +65,23 @@ impl<'a> Watcher<'a> {
         }
     }
 
+    fn get_file_wd(inotify: &mut Inotify, file: &Path) -> Result<WatchDescriptor, String> {
+        match file.parent() {
+            Some(p) => match inotify.add_watch(p, WatchMask::CLOSE_WRITE) {
+                Ok(wd) => Ok(wd),
+                Err(e) => Err(format!(
+                    "Could add directory watch: {}", e.description()))
+            },
+            None => Err(format!(
+                "Couldn't get file's directory: {}", file.display()))
+        }
+    }
+
+
+
     fn update(&mut self) -> Result<(), String> {
 
-        let mut config = match Config::new(self.config_file) {
+        let mut config = match Config::new(&self.config_files) {
             Ok(c) => c,
             Err(e) => return Err(e)
         };
@@ -125,17 +147,18 @@ impl<'a> Watcher<'a> {
     }
 
     fn handle_event(&mut self, event: Event) -> bool {
-        if self.mode.config && self.is_config_event(&event) {
+        if (self.mode.variables || self.mode.bindings)
+            && self.is_config_event(&event) {
             match self.update() {
                 Ok(()) => {
-                    info!("{}: updated", self.config_file.display());
+                    info!("internal configuration updated");
                     self.process_all();
                     return true;
                 },
                 Err(e) => error!("{}", e)
             };
         }
-        if self.mode.bindings {
+        if self.mode.files {
             if let Some(binding) = self.get_binding(&event) {
                 debug!("{:?}", binding);
                 self.process(binding);
@@ -176,9 +199,14 @@ impl<'a> Watcher<'a> {
     }
 
     fn is_config_event(&self, event: &Event) -> bool {
+        return self.is_config_file_event(event, self.config_files.bindings, &self.config_wd.bindings)
+            || self.is_config_file_event(event, self.config_files.variables, &self.config_wd.variables);
+    }
+
+    fn is_config_file_event(&self, event: &Event, config_file: &Path, config_wd: &WatchDescriptor) -> bool {
         if let Some(name) = event.name {
-            if event.wd == self.config_wd {
-                let mut current = PathBuf::from(self.config_file);
+            if &event.wd == config_wd {
+                let mut current = PathBuf::from(config_file);
                 while let Ok(next) = current.read_link() {
                     current = next;
                 }

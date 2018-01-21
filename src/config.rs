@@ -19,34 +19,63 @@ pub struct PathBinding {
     pub to: PathBuf,
 }
 
+pub struct ConfigFiles<'a> {
+    pub bindings: &'a Path,
+    pub variables: &'a Path
+}
+
 
 impl Config {
-    pub fn new(config_file: &Path) -> Result<Config, String>{
-        let file = match File::open(config_file) {
+    pub fn new(config_files: &ConfigFiles) -> Result<Config, String>{
+        let bindings_file = match File::open(config_files.bindings) {
             Ok(f) => f,
             Err(e) => return Err(format!(
                 "Couldn't open {}: {}",
-                config_file.display(),
+                config_files.bindings.display(),
                 e.description()
             ))
         };
 
-        let mut config: Config = match serde_yaml::from_reader(file) {
+        let mut bindings: Vec<PathBinding>
+            = match serde_yaml::from_reader(bindings_file) {
             Ok(c) => c,
             Err(e) => return Err(format!(
                 "Couldn't parse {}: {}",
-                config_file.display(),
+                config_files.bindings.display(),
                 e.description()
             ))
         };
 
-        let config_dir = config_file.parent();
-        for binding in config.bindings.iter_mut() {
+        let config_dir = config_files.bindings.parent();
+        for binding in bindings.iter_mut() {
             binding.from = Config::resolve_path(&binding.from, config_dir);
             binding.to = Config::resolve_path(&binding.to, config_dir);
         }
 
-        Ok(config)
+        let variables_file = match File::open(config_files.variables) {
+            Ok(f) => f,
+            Err(e) => return Err(format!(
+                "Couldn't open {}: {}",
+                config_files.variables.display(),
+                e.description()
+            ))
+        };
+
+        let variables: HashMap<String, String>
+            = match serde_yaml::from_reader(variables_file) {
+            Ok(c) => c,
+            Err(e) => return Err(format!(
+                "Couldn't parse {}: {}",
+                config_files.variables.display(),
+                e.description()
+            ))
+        };
+
+
+        Ok(Config {
+            bindings,
+            variables
+        })
     }
 
     fn resolve_path(path: &Path, parent: Option<&Path>) -> PathBuf {

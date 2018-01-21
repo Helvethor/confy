@@ -22,7 +22,7 @@ use clap::{App, Arg};
 
 use watcher::{Watcher, Mode};
 use generator::Generator;
-use config::{Config, PathBinding};
+use config::{Config, ConfigFiles, PathBinding};
 
 
 fn main() {
@@ -32,31 +32,46 @@ fn main() {
         .version("0.1")
         .author("Vincent Pasquier")
         .about("Continuously substitute key-value pairs accross multiple configuration files")
-        .arg(Arg::with_name("config_file")
-            .help("Configuration file (.yaml)")
-            .short("c")
-            .long("config")
-            .value_name("FILE")
+        .arg(Arg::with_name("bindings_file")
+            .help("Bindings file (.yaml)")
+            .short("b")
+            .long("bindings")
+            .value_name("BINDINGS_FILE")
             .takes_value(true)
             .required(true))
-        .arg(Arg::with_name("watch_bindings")
+        .arg(Arg::with_name("variables_file")
+            .help("Variables file (.yaml)")
+            .short("v")
+            .long("variables")
+            .value_name("BINDINGS_FILE")
+            .takes_value(true)
+            .required(true))
+        .arg(Arg::with_name("watch_files")
             .help("Update to-part of a binding when from-part is modified")
+            .short("F")
+            .long("watch-files"))
+        .arg(Arg::with_name("watch_bindings")
+            .help("Update internal configuration when the bindings file is modified")
             .short("B")
             .long("watch-bindings"))
-        .arg(Arg::with_name("watch_config")
-            .help("Update internal configuration when the config file is modified")
-            .short("C")
-            .long("watch-config"))
+        .arg(Arg::with_name("watch_variables")
+            .help("Update internal configuration when the variables file is modified")
+            .short("V")
+            .long("watch-variables"))
         .get_matches();
 
-    let config_file = Path::new(matches.value_of("config_file").unwrap());
+    let config_files = ConfigFiles {
+        bindings: Path::new(matches.value_of("bindings_file").unwrap()),
+        variables: Path::new(matches.value_of("variables_file").unwrap()),
+    };
     let mode = Mode {
+        files: matches.is_present("watch_files"),
         bindings: matches.is_present("watch_bindings"),
-        config: matches.is_present("watch_config")
+        variables: matches.is_present("watch_config")
     };
 
-    if !mode.bindings && !mode.config {
-        let config = match Config::new(config_file) {
+    if !mode.bindings && !mode.variables && !mode.files{
+        let config = match Config::new(&config_files) {
             Ok(c) => c,
             Err(e) => {
                 error!("{}", e);
@@ -75,7 +90,7 @@ fn main() {
         }
     }
     else {
-        let mut watcher = match Watcher::new(config_file, mode) {
+        let mut watcher = match Watcher::new(config_files, mode) {
             Ok(w) => w,
             Err(e) => {
                 error!("{}", e);
