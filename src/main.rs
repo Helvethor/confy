@@ -60,6 +60,8 @@ fn main() {
             .long("watch-variables"))
         .get_matches();
 
+    debug!("{:?}", matches);
+
     let config_files = ConfigFiles {
         bindings: Path::new(matches.value_of("bindings_file").unwrap()),
         variables: Path::new(matches.value_of("variables_file").unwrap()),
@@ -67,7 +69,7 @@ fn main() {
     let mode = Mode {
         files: matches.is_present("watch_files"),
         bindings: matches.is_present("watch_bindings"),
-        variables: matches.is_present("watch_config")
+        variables: matches.is_present("watch_variables")
     };
 
     if !mode.bindings && !mode.variables && !mode.files{
