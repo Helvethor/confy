@@ -1,6 +1,8 @@
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::collections::HashMap;
 use std::ffi::OsString;
+use std::fmt;
+use std::io;
 
 use inotify::{Event, WatchMask, WatchDescriptor, Inotify};
 use ::PathBinding;
@@ -61,11 +63,16 @@ impl<'a> Watcher<'a> {
     fn add_watch(&mut self, watches: &mut Watches, element: WatchedElement)
         -> Result<(), String>
     {
-        let dir = element.target().parent().unwrap().to_owned();
+        let target = match element.target() {
+            Ok(t) => t,
+            Err(e) => return Err(format!(
+                "Couldn't read target {}: {}", element, e))
+        };
+        let dir = target.parent().unwrap();
         debug!("dir {}", dir.display());
         match self.inotify.add_watch(dir, WatchMask::CLOSE_WRITE) {
             Ok(wd) => {
-                let file_name = element.target().file_name().unwrap().to_owned();
+                let file_name = target.file_name().unwrap().to_owned();
                 let descriptor = ElementDescriptor {
                     wd,
                     file_name
@@ -192,10 +199,23 @@ impl<'a> Watcher<'a> {
 
 impl WatchedElement {
 
-    fn target(&self) -> PathBuf {
+    fn source(&self) -> &Path {
         match self {
             &WatchedElement::Binding(ref binding) => binding.from.as_path(),
             &WatchedElement::Config(ref config_file) => config_file.as_path()
-        }.canonicalize().unwrap()
+        }
+    }
+
+    fn target(&self) -> Result<PathBuf, io::Error> {
+        self.source().canonicalize()
+    }
+}
+
+impl fmt::Display for WatchedElement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.target() {
+            Ok(t) => write!(f, "{}", t.display()),
+            Err(_) => write!(f, "{}", self.source().display())
+        }
     }
 }
