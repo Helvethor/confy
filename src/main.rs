@@ -29,7 +29,7 @@ fn main() {
     log_init();
 
     let matches = App::new("Confy")
-        .version("0.1")
+        .version("0.2.2")
         .author("Vincent Pasquier")
         .about("Continuously substitute key-value pairs accross multiple configuration files")
         .arg(Arg::with_name("bindings_file")
