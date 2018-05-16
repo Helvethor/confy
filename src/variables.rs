@@ -1,6 +1,7 @@
 use std::ops::Deref;
 use std::cell::Cell;
 use std::collections::HashMap;
+use std::env::{vars};
 
 #[derive(Debug)]
 pub struct Variables {
@@ -28,22 +29,28 @@ impl Deref for Variables {
 impl Variables {
     pub fn new(map: &HashMap<String, String>) -> Variables {
         let original = map;
-        let mut map = HashMap::with_capacity(original.len());
+        let env = Variables::env_map();
+        let max_len = original.len() + env.len();
+        let mut map = HashMap::with_capacity(max_len);
+        let mut recto = HashMap::with_capacity(max_len);
+        let mut verso = Vec::with_capacity(max_len);
+        let mut set = DisjointSet::new(max_len);
 
-        let mut recto = HashMap::with_capacity(original.len());
-        let mut verso = Vec::with_capacity(original.len());
-
-        for (i, key) in original.keys().enumerate() {
-            recto.insert(&key[..], i);
+        for key in original.keys() {
+            recto.insert(&key[..], verso.len());
             verso.push(&key[..]);
         }
 
-        let mut set = DisjointSet::new(original.len());
+        for key in env.keys() {
+            recto.insert(&key[..], verso.len());
+            verso.push(&key[..]);
+        }
 
-        for (i, value) in original.values().enumerate() {
+        for (key, value) in original.iter() {
             if value.starts_with("@") {
+                let i = recto.get(&key[..]).unwrap();
                 if let Some(j) = recto.get(&value[1..]) {
-                    set.merge(*j, i);
+                    set.merge(*j, *i);
                 }
             }
         }
@@ -52,7 +59,15 @@ impl Variables {
             let i = recto.get(&key[..]).unwrap();
             let j = set.root(*i);
             let deref_key = verso[j];
-            let value = original.get(&deref_key[..]).unwrap();
+            println!("key: '{}', deref_key: '{}'", key, deref_key);
+            println!("original: {}, env: {}", original.contains_key(deref_key), env.contains_key(deref_key));
+            let value = original.get(deref_key).unwrap_or_else(
+                || env.get(deref_key).unwrap()
+            );
+            map.insert(key.clone(), value.clone());
+        }
+
+        for (key, value) in env.iter() {
             map.insert(key.clone(), value.clone());
         }
 
@@ -60,6 +75,14 @@ impl Variables {
         debug!("dereferenced variables: {:?}", map);
 
         Variables { map }
+    }
+
+    fn env_map() -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        for (key, value) in vars() {
+            map.insert(key, value);
+        }
+        map
     }
 }
 

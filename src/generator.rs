@@ -120,18 +120,16 @@ impl Generator {
         };
         
         let value = match self.variables.get(key) {
-            Some(value) => {
-                match range_str {
-                    Some(range_str) => match self.parse_range(value, range_str) {
-                        Some(range) => {
-                            let value = value.index(range.clone());
-                            debug!("{}[{:?}] = {}", key, range, value);
-                            value
-                        }
-                        None => return None
-                    },
-                    None => value
-                }
+            Some(value) => match range_str {
+                Some(range_str) => match self.parse_range(value, range_str) {
+                    Some(range) => {
+                        let value = value.index(range.clone());
+                        debug!("{}[{:?}] = {}", key, range, value);
+                        value
+                    }
+                    None => return None
+                },
+                None => value
             },
             None => return None
         };
