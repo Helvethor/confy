@@ -59,8 +59,6 @@ impl Variables {
             let i = recto.get(&key[..]).unwrap();
             let j = set.root(*i);
             let deref_key = verso[j];
-            println!("key: '{}', deref_key: '{}'", key, deref_key);
-            println!("original: {}, env: {}", original.contains_key(deref_key), env.contains_key(deref_key));
             let value = original.get(deref_key).unwrap_or_else(
                 || env.get(deref_key).unwrap()
             );
